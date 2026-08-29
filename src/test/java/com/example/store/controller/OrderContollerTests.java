@@ -2,12 +2,10 @@ package com.example.store.controller;
 
 import com.example.store.entity.Customer;
 import com.example.store.entity.Order;
+import com.example.store.exception.ResourceNotFoundException;
 import com.example.store.mapper.CustomerMapper;
-import com.example.store.repository.CustomerRepository;
-import com.example.store.repository.OrderRepository;
+import com.example.store.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.RequiredArgsConstructor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +17,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -27,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(OrderController.class)
 @ComponentScan(basePackageClasses = CustomerMapper.class)
-@RequiredArgsConstructor
 class OrderControllerTests {
 
     @Autowired
@@ -37,10 +33,7 @@ class OrderControllerTests {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private OrderRepository orderRepository;
-
-    @MockitoBean
-    private CustomerRepository customerRepository;
+    private OrderService orderService;
 
     private Order order;
     private Customer customer;
@@ -59,8 +52,7 @@ class OrderControllerTests {
 
     @Test
     void testCreateOrder() throws Exception {
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(orderRepository.save(order)).thenReturn(order);
+        when(orderService.createOrder(order)).thenReturn(order);
 
         mockMvc.perform(post("/order")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,11 +64,30 @@ class OrderControllerTests {
 
     @Test
     void testGetOrder() throws Exception {
-        when(orderRepository.findAll()).thenReturn(List.of(order));
+        when(orderService.getAllOrders()).thenReturn(List.of(order));
 
         mockMvc.perform(get("/order"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$..description").value("Test Order"))
                 .andExpect(jsonPath("$..customer.name").value("John Doe"));
+    }
+
+    @Test
+    void testGetOrderById_found() throws Exception {
+        when(orderService.getOrderById(1L)).thenReturn(order);
+
+        mockMvc.perform(get("/order/{id}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value("Test Order"))
+                .andExpect(jsonPath("$.customer.name").value("John Doe"));
+    }
+
+    @Test
+    void testGetOrderById_notFound() throws Exception {
+        when(orderService.getOrderById(99L)).thenThrow(new ResourceNotFoundException("Order not found with id 99"));
+
+        mockMvc.perform(get("/order/{id}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Order not found with id 99"));
     }
 }
