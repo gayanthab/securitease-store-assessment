@@ -80,6 +80,13 @@ paths:
       summary: Get Customers
       tags:
         - store
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Only return customers with a name word containing this substring
       responses:
         '200':
           description: OK
@@ -90,7 +97,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Customer'
       operationId: getCustomers
-      description: Get all customers
+      description: Get all customers, optionally filtered by a substring of one word in their name
     post:
       summary: Create Customer
       tags:
