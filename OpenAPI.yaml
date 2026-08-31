@@ -38,6 +38,8 @@ paths:
       responses:
         '201':
           description: Created
+        '400':
+          description: Bad Request
       operationId: createOrder
       description: Create a new order
       requestBody:
@@ -46,11 +48,16 @@ paths:
             schema:
               type: object
               properties:
-                id:
+                description:
+                  type: string
+                customerId:
                   type: integer
                   format: int64
-                descriptioon:
-                  type: string
+                productIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
 
   /order/{id}:
     get:
@@ -129,17 +136,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  description:
-                    type: string
-                  orders:
-                    type: array
-                    items:
-                      type: integer
-                      format: int64
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
       operationId: getProducts
       description: Get all products
     post:
@@ -164,6 +163,29 @@ paths:
                   type: string
                   x-stoplight:
                     id: jbh0jzkonppv8
+  /products/{id}:
+    get:
+      summary: Get Product By Id
+      tags:
+        - store
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Not Found
+      operationId: getProductById
+      description: Get a single product by its ID
 components:
   schemas:
     Order:
@@ -183,6 +205,30 @@ components:
               format: int64
             description:
               type: string
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              description:
+                type: string
+    Product:
+      title: Product
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        description:
+          type: string
+        orders:
+          type: array
+          items:
+            type: integer
+            format: int64
     Customer:
       title: Customer
       type: object

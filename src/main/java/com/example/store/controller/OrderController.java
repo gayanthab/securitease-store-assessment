@@ -1,7 +1,7 @@
 package com.example.store.controller;
 
+import com.example.store.dto.OrderCreateRequest;
 import com.example.store.dto.OrderDTO;
-import com.example.store.entity.Order;
 import com.example.store.mapper.OrderMapper;
 import com.example.store.service.OrderService;
 
@@ -32,7 +32,7 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OrderDTO createOrder(@RequestBody Order order) {
-        return orderMapper.orderToOrderDTO(orderService.createOrder(order));
+    public OrderDTO createOrder(@RequestBody OrderCreateRequest request) {
+        return orderMapper.orderToOrderDTO(orderService.createOrder(request));
     }
 }
