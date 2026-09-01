@@ -1,5 +1,6 @@
 package com.example.store.service;
 
+import com.example.store.dto.CustomerCreateRequest;
 import com.example.store.entity.Customer;
 import com.example.store.repository.CustomerRepository;
 
@@ -23,7 +24,9 @@ public class CustomerService {
         return customerRepository.findByNameWordContaining(name);
     }
 
-    public Customer createCustomer(Customer customer) {
+    public Customer createCustomer(CustomerCreateRequest request) {
+        Customer customer = new Customer();
+        customer.setName(request.getName());
         return customerRepository.save(customer);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.store.controller;
 
+import com.example.store.dto.CustomerCreateRequest;
 import com.example.store.entity.Customer;
 import com.example.store.mapper.CustomerMapper;
 import com.example.store.service.CustomerService;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -44,11 +46,14 @@ class CustomerControllerTests {
 
     @Test
     void testCreateCustomer() throws Exception {
-        when(customerService.createCustomer(customer)).thenReturn(customer);
+        when(customerService.createCustomer(any(CustomerCreateRequest.class))).thenReturn(customer);
+
+        CustomerCreateRequest request = new CustomerCreateRequest();
+        request.setName("John Doe");
 
         mockMvc.perform(post("/customer")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(customer)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("John Doe"));
     }

@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5-add-products
+      author: gayanthapdn02@gmail.com
+      changes:
+        - sqlFile:
+            path: db/changelog/create-product-table.sql
+        - sqlFile:
+            path: db/changelog/create-order-product-table.sql

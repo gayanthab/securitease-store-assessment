@@ -1,5 +1,6 @@
 package com.example.store.controller;
 
+import com.example.store.dto.OrderCreateRequest;
 import com.example.store.entity.Customer;
 import com.example.store.entity.Order;
 import com.example.store.exception.ResourceNotFoundException;
@@ -18,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,14 +54,35 @@ class OrderControllerTests {
 
     @Test
     void testCreateOrder() throws Exception {
-        when(orderService.createOrder(order)).thenReturn(order);
+        when(orderService.createOrder(any(OrderCreateRequest.class))).thenReturn(order);
+
+        OrderCreateRequest request = new OrderCreateRequest();
+        request.setDescription("Test Order");
+        request.setCustomerId(1L);
+        request.setProductIds(List.of(1L));
 
         mockMvc.perform(post("/order")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(order)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.description").value("Test Order"))
                 .andExpect(jsonPath("$.customer.name").value("John Doe"));
+    }
+
+    @Test
+    void testCreateOrder_returnsBadRequest_whenNoProducts() throws Exception {
+        when(orderService.createOrder(any(OrderCreateRequest.class)))
+                .thenThrow(new IllegalArgumentException("An order must contain at least one product"));
+
+        OrderCreateRequest request = new OrderCreateRequest();
+        request.setDescription("Test Order");
+        request.setCustomerId(1L);
+
+        mockMvc.perform(post("/order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("An order must contain at least one product"));
     }
 
     @Test
