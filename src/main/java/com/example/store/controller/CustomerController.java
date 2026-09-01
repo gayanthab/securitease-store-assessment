@@ -1,7 +1,7 @@
 package com.example.store.controller;
 
+import com.example.store.dto.CustomerCreateRequest;
 import com.example.store.dto.CustomerDTO;
-import com.example.store.entity.Customer;
 import com.example.store.mapper.CustomerMapper;
 import com.example.store.service.CustomerService;
 
@@ -27,7 +27,7 @@ public class CustomerController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CustomerDTO createCustomer(@RequestBody Customer customer) {
-        return customerMapper.customerToCustomerDTO(customerService.createCustomer(customer));
+    public CustomerDTO createCustomer(@RequestBody CustomerCreateRequest request) {
+        return customerMapper.customerToCustomerDTO(customerService.createCustomer(request));
     }
 }

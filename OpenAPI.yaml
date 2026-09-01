@@ -120,9 +120,6 @@ paths:
             schema:
               type: object
               properties:
-                id:
-                  type: integer
-                  format: int64
                 name:
                   type: string
   /products:
@@ -156,13 +153,8 @@ paths:
             schema:
               type: object
               properties:
-                id:
-                  type: integer
-                  format: int64
                 description:
                   type: string
-                  x-stoplight:
-                    id: jbh0jzkonppv8
   /products/{id}:
     get:
       summary: Get Product By Id

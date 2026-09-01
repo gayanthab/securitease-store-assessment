@@ -1,5 +1,6 @@
 package com.example.store.service;
 
+import com.example.store.dto.ProductCreateRequest;
 import com.example.store.entity.Product;
 import com.example.store.exception.ResourceNotFoundException;
 import com.example.store.repository.ProductRepository;
@@ -12,6 +13,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,11 +61,14 @@ class ProductServiceTests {
 
     @Test
     void createProduct_savesAndReturnsProduct() {
-        when(productRepository.save(product)).thenReturn(product);
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setDescription("Test Product");
 
-        Product result = productService.createProduct(product);
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+
+        Product result = productService.createProduct(request);
 
         assertThat(result).isEqualTo(product);
-        verify(productRepository).save(product);
+        verify(productRepository).save(any(Product.class));
     }
 }

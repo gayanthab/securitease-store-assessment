@@ -1,5 +1,6 @@
 package com.example.store.controller;
 
+import com.example.store.dto.ProductCreateRequest;
 import com.example.store.entity.Product;
 import com.example.store.exception.ResourceNotFoundException;
 import com.example.store.mapper.CustomerMapper;
@@ -17,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -45,11 +47,14 @@ class ProductControllerTests {
 
     @Test
     void testCreateProduct() throws Exception {
-        when(productService.createProduct(product)).thenReturn(product);
+        when(productService.createProduct(any(ProductCreateRequest.class))).thenReturn(product);
+
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setDescription("Test Product");
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(product)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.description").value("Test Product"));
     }

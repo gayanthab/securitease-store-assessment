@@ -1,5 +1,6 @@
 package com.example.store.service;
 
+import com.example.store.dto.CustomerCreateRequest;
 import com.example.store.entity.Customer;
 import com.example.store.repository.CustomerRepository;
 
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -61,11 +63,14 @@ class CustomerServiceTests {
 
     @Test
     void createCustomer_savesAndReturnsCustomer() {
-        when(customerRepository.save(customer)).thenReturn(customer);
+        CustomerCreateRequest request = new CustomerCreateRequest();
+        request.setName("Dr. Winifred Morissette");
 
-        Customer result = customerService.createCustomer(customer);
+        when(customerRepository.save(any(Customer.class))).thenReturn(customer);
+
+        Customer result = customerService.createCustomer(request);
 
         assertThat(result).isEqualTo(customer);
-        verify(customerRepository).save(customer);
+        verify(customerRepository).save(any(Customer.class));
     }
 }

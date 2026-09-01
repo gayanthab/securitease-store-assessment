@@ -1,5 +1,6 @@
 package com.example.store.service;
 
+import com.example.store.dto.ProductCreateRequest;
 import com.example.store.entity.Product;
 import com.example.store.exception.ResourceNotFoundException;
 import com.example.store.repository.ProductRepository;
@@ -26,7 +27,9 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id " + id));
     }
 
-    public Product createProduct(Product product) {
+    public Product createProduct(ProductCreateRequest request) {
+        Product product = new Product();
+        product.setDescription(request.getDescription());
         return productRepository.save(product);
     }
 }
