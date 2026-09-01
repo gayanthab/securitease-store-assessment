@@ -60,6 +60,18 @@ class ProductControllerTests {
     }
 
     @Test
+    void testCreateProduct_returnsBadRequest_whenDescriptionBlank() throws Exception {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setDescription("");
+
+        mockMvc.perform(post("/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").exists());
+    }
+
+    @Test
     void testGetProducts() throws Exception {
         when(productService.getAllProducts()).thenReturn(List.of(product));
 

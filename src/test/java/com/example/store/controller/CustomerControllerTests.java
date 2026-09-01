@@ -59,6 +59,18 @@ class CustomerControllerTests {
     }
 
     @Test
+    void testCreateCustomer_returnsBadRequest_whenNameBlank() throws Exception {
+        CustomerCreateRequest request = new CustomerCreateRequest();
+        request.setName("");
+
+        mockMvc.perform(post("/customer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.name").exists());
+    }
+
+    @Test
     void testGetAllCustomers() throws Exception {
         when(customerService.getCustomers(null)).thenReturn(List.of(customer));
 

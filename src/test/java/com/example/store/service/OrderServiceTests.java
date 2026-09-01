@@ -14,12 +14,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -86,7 +86,7 @@ class OrderServiceTests {
         request.setProductIds(List.of(1L));
 
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(productRepository.findAllById(List.of(1L))).thenReturn(List.of(product));
+        when(productRepository.findAllById(Set.of(1L))).thenReturn(List.of(product));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         Order result = orderService.createOrder(request);
@@ -96,27 +96,20 @@ class OrderServiceTests {
     }
 
     @Test
-    void createOrder_throwsIllegalArgumentException_whenProductIdsMissing() {
+    void createOrder_deduplicatesProductIds_whenDuplicatesProvided() {
         OrderCreateRequest request = new OrderCreateRequest();
         request.setDescription("Test Order");
         request.setCustomerId(1L);
+        request.setProductIds(List.of(1L, 1L));
 
-        assertThatThrownBy(() -> orderService.createOrder(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("at least one product");
-        verify(orderRepository, never()).save(any(Order.class));
-    }
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(productRepository.findAllById(Set.of(1L))).thenReturn(List.of(product));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
 
-    @Test
-    void createOrder_throwsIllegalArgumentException_whenProductIdsEmpty() {
-        OrderCreateRequest request = new OrderCreateRequest();
-        request.setDescription("Test Order");
-        request.setCustomerId(1L);
-        request.setProductIds(List.of());
+        Order result = orderService.createOrder(request);
 
-        assertThatThrownBy(() -> orderService.createOrder(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("at least one product");
+        assertThat(result).isEqualTo(order);
+        verify(productRepository).findAllById(Set.of(1L));
     }
 
     @Test
@@ -141,7 +134,7 @@ class OrderServiceTests {
         request.setProductIds(List.of(1L, 2L));
 
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(productRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(product));
+        when(productRepository.findAllById(Set.of(1L, 2L))).thenReturn(List.of(product));
 
         assertThatThrownBy(() -> orderService.createOrder(request))
                 .isInstanceOf(ResourceNotFoundException.class)

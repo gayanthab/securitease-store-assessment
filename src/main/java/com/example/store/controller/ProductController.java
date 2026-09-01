@@ -5,6 +5,8 @@ import com.example.store.dto.ProductDTO;
 import com.example.store.mapper.ProductMapper;
 import com.example.store.service.ProductService;
 
+import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -32,7 +34,7 @@ public class ProductController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProductDTO createProduct(@RequestBody ProductCreateRequest request) {
+    public ProductDTO createProduct(@Valid @RequestBody ProductCreateRequest request) {
         return productMapper.productToProductDTO(productService.createProduct(request));
     }
 }

@@ -13,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -34,17 +36,14 @@ public class OrderService {
     }
 
     public Order createOrder(OrderCreateRequest request) {
-        if (request.getProductIds() == null || request.getProductIds().isEmpty()) {
-            throw new IllegalArgumentException("An order must contain at least one product");
-        }
-
         Customer customer = customerRepository
                 .findById(request.getCustomerId())
                 .orElseThrow(
                         () -> new ResourceNotFoundException("Customer not found with id " + request.getCustomerId()));
 
-        List<Product> products = productRepository.findAllById(request.getProductIds());
-        if (products.size() != request.getProductIds().size()) {
+        Set<Long> uniqueProductIds = new HashSet<>(request.getProductIds());
+        List<Product> products = productRepository.findAllById(uniqueProductIds);
+        if (products.size() != uniqueProductIds.size()) {
             throw new ResourceNotFoundException("One or more products not found");
         }
 
