@@ -70,19 +70,44 @@ class OrderControllerTests {
     }
 
     @Test
-    void testCreateOrder_returnsBadRequest_whenNoProducts() throws Exception {
-        when(orderService.createOrder(any(OrderCreateRequest.class)))
-                .thenThrow(new IllegalArgumentException("An order must contain at least one product"));
-
+    void testCreateOrder_returnsBadRequest_whenDescriptionBlank() throws Exception {
         OrderCreateRequest request = new OrderCreateRequest();
-        request.setDescription("Test Order");
+        request.setDescription("");
         request.setCustomerId(1L);
+        request.setProductIds(List.of(1L));
 
         mockMvc.perform(post("/order")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("An order must contain at least one product"));
+                .andExpect(jsonPath("$.description").exists());
+    }
+
+    @Test
+    void testCreateOrder_returnsBadRequest_whenCustomerIdMissing() throws Exception {
+        OrderCreateRequest request = new OrderCreateRequest();
+        request.setDescription("Test Order");
+        request.setProductIds(List.of(1L));
+
+        mockMvc.perform(post("/order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.customerId").exists());
+    }
+
+    @Test
+    void testCreateOrder_returnsBadRequest_whenProductIdsEmpty() throws Exception {
+        OrderCreateRequest request = new OrderCreateRequest();
+        request.setDescription("Test Order");
+        request.setCustomerId(1L);
+        request.setProductIds(List.of());
+
+        mockMvc.perform(post("/order")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.productIds").exists());
     }
 
     @Test

@@ -5,6 +5,8 @@ import com.example.store.dto.OrderDTO;
 import com.example.store.mapper.OrderMapper;
 import com.example.store.service.OrderService;
 
+import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -32,7 +34,7 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OrderDTO createOrder(@RequestBody OrderCreateRequest request) {
+    public OrderDTO createOrder(@Valid @RequestBody OrderCreateRequest request) {
         return orderMapper.orderToOrderDTO(orderService.createOrder(request));
     }
 }
