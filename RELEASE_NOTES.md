@@ -1,93 +1,129 @@
 # Release Notes — v2.0.0
 
 ## Summary
-Delivers all four requested features — order lookup by ID, customer name search,
-GET-endpoint performance optimizations, and a new `/products` endpoint — plus a CI
-pipeline that builds and publishes a Docker image. Also fixes a pre-existing issue in
-the baseline application, and adds further optimizations and validation enhancements
-found during review.
+This release includes all four requested features - order lookup by ID, customer name search,
+GET-endpoint performance improvements, and a new `/products` endpoint, along with a CI pipeline that
+builds and publishes a Docker image. I also fixed a data-seeding issue that was already in
+the baseline and found and fixed a validation issue while testing everything end to end.
 
-Each item below — the baseline fix, all four tasks, the CI pipeline, and the
-validation enforcement — was implemented on its own branch, tested independently, and
-merged to `main` in sequence, in the order listed.
+I worked on each change in its own branch, tested it separately, and then merged it to
+`main` in order. So the sequence below is the same order in which I actually completed
+and merged the changes.
 
 ## General Assumptions
-- Treated as a live production service with real API consumers and real production
-  data, per the assignment's own framing.
-- Where a requirement was ambiguous, a decision was made and documented rather than
-  guessed silently.
-- No authentication/authorization was added — out of scope for this assignment.
+- I treated this as a real production service with real consumers and real data, since
+  that is how the assignment was presented.
+- I didn't add authentication/authorization because it wasn't part of the requirements
+  and was outside the scope of this assignment.
 
-## 1. Baseline Fix — Sequence Desync
-- **Fix:** `POST /customer` and `POST /order` failed with `duplicate key` errors. Root
-  cause: seed data used explicit IDs, which never advanced the underlying Postgres
-  sequence. Fixed with a new Liquibase changeset resyncing both sequences to `MAX(id)`.
-- **Assumptions:** the fix only needs to run once, right after the bulk seed load — no
-  seed data is added with explicit IDs afterward.
-- **Branch:** `fix/customer-order-sequence-issue`
+## 1. Baseline fix - sequence desync
+Before starting the actual tasks, I found that both `POST /customer` and `POST /order` were
+failing with `duplicate key` errors. After checking the database, I found that the seed data
+was inserting rows with explicit IDs, but those inserts don't update the PostgreSQL sequence
+behind the columns. Because of that, new inserts could generate IDs that were already used
+by the seed data.
 
-## 2. Task 1 — Find Order by ID
-- **Fix:** Added `GET /order/{id}`, returning `404` if not found. Introduced an
-  `OrderService` layer (the controller previously called the repository directly),
-  plus a shared exception-handling pattern (`ResourceNotFoundException` + a central
-  handler) — both reused by every later task.
-- **Assumptions:** none beyond the requirement itself.
-- **Branch:** `feature/get-order-by-id`
+I fixed this by adding a new Liquibase changeset that resyncs both sequences to `MAX(id)`.
 
-## 3. Task 2 — Customer Search
-- **Fix:** Added `GET /customer?name=`, matching a substring within one word of the
-  customer's name — not a substring of the name as a whole. Also introduced a
-  `CustomerService` layer (the controller previously called the repository directly)
-  — a deliberate design change matching the pattern already established for `Order`
-  in Task 1, so the codebase has a consistent place for business logic ahead of future
-  changes (`Product` follows the same pattern in Task 4).
-- **Assumptions:** search is case-insensitive, and the query is treated as a single
-  term, not split into multiple words.
-- **Branch:** `feature/customer-search-by-name`
+**Assumption:** this only needs to run once, after the initial seed data is loaded - nothing
+after this is expected to insert rows with explicit IDs.
 
-## 4. Task 3 — GET Endpoint Performance
-- **Fix:** Fixed N+1 query patterns (`@EntityGraph`) on the list endpoints, and added
-  missing indexes (`order.customer_id`, a trigram index on `customer.name`). This
-  is a purely internal change — no request or response shape changed anywhere, so
-  there's no consumer disruption and no contract change. Pagination was also
-  considered for this issue, since it becomes the more important optimization at real
-  scale, but it inherently requires consumer coordination — tracked as a Further Enhancement instead of built here.
-- **Assumptions:** minimizing round trips was prioritized, since the reported issue specifically cites high latency between the app and the database.
-- **Branch:** `fix/perf-issue-get-endpoints`
+**Branch:** `fix/customer-order-sequence-issue`
 
-## 5. Task 4 — Products Endpoint
-- **Fix:** Added `/products` (`POST`, `GET` all + by ID), many-to-many with `Order`.
-  `GET /order` and `GET /order/{id}` responses now additionally include each order's
-  products. `POST /order`'s **request body** now requires `customerId`/`productIds` instead of a nested `customer` object, since "an
-  order contains 1 or more products" makes this a mandatory concept the old shape had
-  no place for. This is a deliberate breaking change, scoped only to that one request
-  body — no `GET` response changed shape.
-- **Assumptions:**
-  - Consumers of the order-creation endpoint are already aware of this change and will
-    align their integration accordingly.
-  - Existing, already-seeded orders keep zero products — no retroactive backfill.
-- **Branch:** `feature/products-endpoint`
+## 2. Task 1 - find order by ID
+The first feature I worked on was `GET /order/{id}`. It returns the order when it exists and
+returns `404` when it doesn't.
 
-## 6. CI Pipeline
-- **Fix:** GitHub Actions builds, format-checks, and tests every push; on merge to
-  `main`, builds and publishes a Docker image to GitHub Container Registry. Since the
-  source repository is public, the published image is public too.
-- **Assumptions:** no database service is needed in CI, since every test mocks the
-  repository/service layer rather than hitting a real one.
-- **Branch:** `feature/ci-docker-pipeline`
+To support this, I introduced an `OrderService` because the controller was accessing the
+repository directly before this change. I also added a shared `ResourceNotFoundException`
+and a central `@RestControllerAdvice` for handling these errors. This was then reused by
+the other tasks.
 
-## 7. Request Validation Enforcement
-- **Fix:** Closed a gap found during review and test: blank/missing required fields on
-  all three create endpoints crashed with `500` instead of a clean `400`, and
-  duplicate `productIds` were incorrectly rejected as "not found." Added field-level
-  validation and fixed the duplicate-ID logic.
-- **Assumptions:** validation covers request *shape* only (blank/missing fields) —
-  existence checks (does this customer/product actually exist) stay separate, since
-  they need a database lookup that request validation can't perform.
-- **Branch:** `feature/request-validation-improvements`
+**Branch:** `feature/get-order-by-id`
 
-## Further Enhancements
-- Pagination on `GET /order`/`GET /customer` — deferred pending a product decision,
-  since requires consumer coordination.
-- A caching layer, `UPDATE`/`DELETE` endpoints on all resources, integration-test
-  infrastructure (Testcontainers), and authentication/authorization.
+## 3. Task 2 - customer search
+Next I added `GET /customer?name=`.
+
+Added GET /customer?name=, matching a substring within one word of the customer's name, not a substring of the name as a whole.
+
+I also added a `CustomerService`, following the same structure as the `OrderService`
+introduced in the previous task. This keeps the controllers consistent instead of having
+the customer controller access the repository directly.
+
+**Assumption:** the search is case-insensitive, and the value passed in the `name` parameter
+is treated as one search term rather than being split into multiple terms.
+
+**Branch:** `feature/customer-search-by-name`
+
+## 4. Task 3 - GET endpoint performance
+For this task, I wanted to understand the actual performance issue before changing the code.
+
+I found that both list endpoints were doing a lazy-load-per-row pattern under the hood.
+I changed this to use `@EntityGraph`, which reduces the database access for each endpoint.
+
+I also added missing indexes (order.customer_id, a trigram index on customer.name)
+
+These changes are internal and don't change the request or response structure, so existing
+consumers don't need to make any changes.
+
+I also considered pagination because it will become more important as the data grows.
+However, adding it would change the payload structure and needs a product decision, so
+I left it under Further Enhancements instead of including it in this release.
+
+**Assumption:** reducing the number of database round trips was more important here, since the reported issue specifically mentioned latency
+between the application and the database.
+
+**Branch:** `fix/perf-issue-get-endpoints`
+
+## 5. Task 4 - products endpoint
+I added `/products` and introduced a many-to-many relationship between `Order` and `Product`.
+`GET /order` and `GET /order/{id}` now include the products for each order. This is an
+additive change, so the existing GET responses still work with the additional product data.
+
+`POST /order` did need to change, though. It now takes `customerId` and `productIds` instead
+of the old nested `customer` object. The reason is that an order now needs one or more
+products, and the old request structure didn't have a suitable place to provide the
+product IDs.
+
+This means there is a breaking change to the `POST /order` request body.
+
+**Assumption:** existing consumers of this endpoint will update their request to use the
+new structure. I also assumed that existing orders created before this change will simply
+have zero products. There isn't enough information to know which products should be assigned
+to the existing synthetic seed orders, so I didn't try to make up that data.
+
+**Branch:** `feature/products-endpoint`
+
+## 6. CI pipeline
+I added a GitHub Actions pipeline that runs the build, formatting and tests on every push.
+
+Once the checks pass on `main`, the pipeline builds the Docker image and publishes it to GHCR.
+Because the repository is public, the image is public as well, so no manual visibility change
+was needed.
+
+**Assumption:** The pipeline stops once the image is published, there's no CD step, so actually deploying that image
+anywhere is still a manual action.
+
+**Branch:** `feature/ci-docker-pipeline`
+
+## 7. Request validation
+After completing the main features, I tested the APIs with missing and invalid request fields
+instead of assuming the existing validation was enough.
+
+I found three endpoints that were returning a raw `500` when `name` or `description` was
+blank. I added proper field-level validation so these requests return a `400` instead.
+
+**Assumption:** validation here focuses on the request itself, such as whether a required
+field is missing or blank. Checking whether a referenced customer or product actually exists
+still requires a database lookup, so that behaviour was left as it was.
+
+**Branch:** `feature/request-validation-improvements`
+
+## Further enhancements
+Identified but not built:
+- Pagination on `GET /order`/`GET /customer` - this needs a product decision first, since it
+  changes the payload shape.
+- A caching layer.
+- `UPDATE`/`DELETE` support on any resource - none exist today.
+- Integration tests against a real database - the current tests are mock-based.
+- Authentication/authorization - nothing exists yet.
